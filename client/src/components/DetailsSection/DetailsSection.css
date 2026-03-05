@@ -76,14 +76,26 @@
   max-height: 340px;
   max-width: 340px;
   width: 100%;
-  border: 3px solid var(--border-gold);
-  border-radius: 8px;
+  border: 1px solid var(--border-gold);
+  border-radius: 4px;
   overflow: hidden;
-  background: var(--bg-panel);
+  background: rgba(26, 18, 8, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 20px rgba(201, 168, 76, 0.3);
+  box-shadow: 0 0 12px rgba(212, 146, 30, 0.15);
+  transition: all 0.25s ease;
+  cursor: default;
+}
+
+.details-portrait:hover,
+.details-portrait.hovered {
+  border: 1px solid var(--glow-primary);
+  box-shadow: 0 0 24px rgba(255, 153, 0, 0.4),
+              0 0 48px rgba(255, 153, 0, 0.15),
+              inset 0 0 20px rgba(255, 153, 0, 0.05);
+  transform: translateY(-2px);
+  background: rgba(26, 18, 8, 0.95);
 }
 
 .details-portrait img {

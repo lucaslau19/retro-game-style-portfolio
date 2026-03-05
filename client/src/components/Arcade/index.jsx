@@ -1,7 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Gamepad2, Trophy } from 'lucide-react';
+import { Trophy } from 'lucide-react';
+import { getTopScores, submitScore } from '../../lib/arcadeScores';
 import './Arcade.css';
+
+const getRelativeTime = (date) => {
+  const now = new Date();
+  const diff = now - new Date(date);
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (days > 0) return `${days}d ago`;
+  if (hours > 0) return `${hours}h ago`;
+  if (minutes > 0) return `${minutes}m ago`;
+  return 'now';
+};
 
 const Arcade = () => {
   const canvasRef = useRef(null);
@@ -10,61 +24,68 @@ const Arcade = () => {
   const [lives, setLives] = useState(2);
   const [wave, setWave] = useState(1);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
   const [showInitialInput, setShowInitialInput] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
   const [waveMessage, setWaveMessage] = useState('');
+  const [savedInitials, setSavedInitials] = useState(null);
 
-  const gameDataRef = useRef({
+  const gameStateRef = useRef({
     score: 0,
     lives: 2,
     wave: 1,
-    playerX: 0,
-    playerY: 0,
     objects: [],
-    lastSpawnTime: 0,
-    lastXPSpawnTime: 0,
+    player: { x: 0, y: 0, width: 28, height: 36, invincible: false },
+    lastSpawn: 0,
     spawnInterval: 1200,
     fallSpeed: 2.5,
+    animFrameId: null,
+    running: false,
+    xpSpawnTimer: 0,
     gameStartTime: 0,
-    difficulty: 1,
-    invincibilityEnd: 0,
     floatingTexts: []
   });
 
+  const keysRef = useRef({});
+  const gameLoopRef = useRef(null);
+
   useEffect(() => {
-    const saved = localStorage.getItem('bugdodge_leaderboard');
-    if (saved) {
-      try {
-        setLeaderboard(JSON.parse(saved));
-      } catch {}
+    const saved = localStorage.getItem('bugdodge_initials');
+    if (saved && saved.length === 2) {
+      setSavedInitials(saved);
     }
+    
+    const loadLeaderboard = async () => {
+      setLoadingLeaderboard(true);
+      const scores = await getTopScores();
+      setLeaderboard(scores);
+      setLoadingLeaderboard(false);
+    };
+    
+    loadLeaderboard();
   }, []);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const interval = setInterval(async () => {
+      const scores = await getTopScores();
+      setLeaderboard(scores);
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
-    const ctx = canvas.getContext('2d');
-    const gameData = gameDataRef.current;
-
-    // Set responsive canvas size
-    const container = canvas.parentElement;
-    canvas.width = Math.min(900, container?.offsetWidth || 900);
-    canvas.height = 550;
-
-    const playerWidth = 28;
-    const playerHeight = 36;
-    const objectSize = 25;
-    const canvasBottom = canvas.height - 20;
-    const playerY = canvasBottom - playerHeight;
-
-    const keys = {};
+  useEffect(() => {
+    const keys = keysRef.current;
 
     const handleKeyDown = (e) => {
       keys[e.key.toLowerCase()] = true;
       if (e.key === ' ') {
         e.preventDefault();
-        handleStart();
+        if (gameState === 'start') {
+          setGameState('playing');
+        } else if (gameState === 'gameOver' && !showInitialInput) {
+          setGameState('start');
+        }
       }
     };
 
@@ -75,59 +96,53 @@ const Arcade = () => {
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
-    const handleStart = () => {
-      if (gameState === 'start') {
-        startGame();
-      } else if (gameState === 'gameOver' && !showInitialInput) {
-        resetGame();
-      }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
     };
+  }, [gameState, showInitialInput]);
 
-    const startGame = () => {
-      gameData.score = 0;
-      gameData.lives = 2;
-      gameData.wave = 1;
-      gameData.playerX = canvas.width / 2 - playerWidth / 2;
-      gameData.playerY = playerY;
-      gameData.objects = [];
-      gameData.lastSpawnTime = Date.now();
-      gameData.lastXPSpawnTime = Date.now();
-      gameData.spawnInterval = 1200;
-      gameData.fallSpeed = 2.5;
-      gameData.gameStartTime = Date.now();
-      gameData.difficulty = 1;
-      gameData.invincibilityEnd = 0;
-      gameData.floatingTexts = [];
-      setGameState('playing');
-      setScore(0);
-      setLives(2);
-      setWave(1);
-      setWaveMessage('');
-    };
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const resetGame = () => {
-      setGameState('start');
-      setShowInitialInput(false);
-      setWaveMessage('');
-    };
+    const ctx = canvas.getContext('2d');
+    const state = gameStateRef.current;
+    const keys = keysRef.current;
 
-    const checkHighScore = (score) => {
-      if (leaderboard.length < 5) return true;
-      return score > (leaderboard[leaderboard.length - 1]?.score || 0);
-    };
+    const container = canvas.parentElement;
+    canvas.width = Math.min(900, container?.offsetWidth || 900);
+    canvas.height = 550;
+
+    const PLAYER_WIDTH = 28;
+    const PLAYER_HEIGHT = 36;
+    const OBJECT_SIZE = 25;
+    const CANVAS_BOTTOM = canvas.height - 20;
+    const MOVE_SPEED = 7;
+
+    if (gameState === 'playing' && !state.running) {
+      state.score = 0;
+      state.lives = 2;
+      state.wave = 1;
+      state.objects = [];
+      state.lastSpawn = 0;
+      state.spawnInterval = 1200;
+      state.fallSpeed = 2.5;
+      state.xpSpawnTimer = 0;
+      state.gameStartTime = Date.now();
+      state.running = true;
+      state.player.x = canvas.width / 2 - PLAYER_WIDTH / 2;
+      state.player.y = CANVAS_BOTTOM - PLAYER_HEIGHT;
+      state.player.invincible = false;
+      state.floatingTexts = [];
+    }
 
     const getDifficultySettings = (elapsedSeconds) => {
-      if (elapsedSeconds < 10) {
-        return { wave: 1, spawnInterval: 1200, fallSpeed: 2.5, xpInterval: 20000 };
-      } else if (elapsedSeconds < 20) {
-        return { wave: 2, spawnInterval: 1000, fallSpeed: 3.5, xpInterval: 20000 };
-      } else if (elapsedSeconds < 35) {
-        return { wave: 3, spawnInterval: 800, fallSpeed: 4.5, xpInterval: 20000 };
-      } else if (elapsedSeconds < 50) {
-        return { wave: 4, spawnInterval: 600, fallSpeed: 5.5, xpInterval: 20000 };
-      } else {
-        return { wave: 5, spawnInterval: 400, fallSpeed: 7, xpInterval: 25000 };
-      }
+      if (elapsedSeconds < 10) return { wave: 1, spawnInterval: 1200, fallSpeed: 2.5, xpInterval: 20000 };
+      if (elapsedSeconds < 20) return { wave: 2, spawnInterval: 1000, fallSpeed: 3.5, xpInterval: 20000 };
+      if (elapsedSeconds < 35) return { wave: 3, spawnInterval: 800, fallSpeed: 4.5, xpInterval: 20000 };
+      if (elapsedSeconds < 50) return { wave: 4, spawnInterval: 600, fallSpeed: 5.5, xpInterval: 20000 };
+      return { wave: 5, spawnInterval: 400, fallSpeed: 7, xpInterval: 25000 };
     };
 
     const getRandomObjectType = () => {
@@ -140,206 +155,117 @@ const Arcade = () => {
       return 'deadline';
     };
 
+    const checkCollision = (player, obj) => {
+      const playerCenterX = player.x + player.width / 2;
+      const playerCenterY = player.y + player.height / 2;
+      const objWidth = obj.type === 'deadline' ? 40 : OBJECT_SIZE;
+      const objCenterX = obj.x + objWidth / 2;
+      const objCenterY = obj.y + objWidth / 2;
+      const dx = Math.abs(playerCenterX - objCenterX);
+      const dy = Math.abs(playerCenterY - objCenterY);
+      const hitW = (player.width + objWidth) / 2 - 8;
+      const hitH = (player.height + objWidth) / 2 - 8;
+      return dx < hitW && dy < hitH;
+    };
+
+    const checkHighScore = (score) => {
+      if (leaderboard.length < 10) return true;
+      return score > (leaderboard[leaderboard.length - 1]?.score || 0);
+    };
+
     const update = () => {
-      if (gameState !== 'playing') return;
+      if (!state.running || gameState !== 'playing') return;
 
       const now = Date.now();
-      const elapsedSeconds = (now - gameData.gameStartTime) / 1000;
+      const elapsedSeconds = (now - state.gameStartTime) / 1000;
       const difficulty = getDifficultySettings(elapsedSeconds);
 
-      gameData.difficulty = difficulty.wave;
-      gameData.spawnInterval = difficulty.spawnInterval;
-      gameData.fallSpeed = difficulty.fallSpeed;
+      state.spawnInterval = difficulty.spawnInterval;
+      state.fallSpeed = difficulty.fallSpeed;
 
-      const newWave = difficulty.wave;
-      if (newWave !== gameData.wave) {
-        setWave(newWave);
-        gameData.wave = newWave;
-        setWaveMessage(`WAVE ${newWave} REACHED!`);
-        gameData.score += 15;
-        setScore(gameData.score);
+      if (difficulty.wave !== state.wave) {
+        state.wave = difficulty.wave;
+        setWave(state.wave);
+        setWaveMessage(`WAVE ${state.wave} REACHED!`);
+        state.score += 15;
+        setScore(Math.floor(state.score));
         setTimeout(() => setWaveMessage(''), 1500);
       }
 
-      const moveSpeed = 7;
-      if (keys['arrowleft'] || keys['a']) {
-        gameData.playerX = Math.max(0, gameData.playerX - moveSpeed);
-      }
-      if (keys['arrowright'] || keys['d']) {
-        gameData.playerX = Math.min(canvas.width - playerWidth, gameData.playerX + moveSpeed);
-      }
+      if (keys['arrowleft'] || keys['a']) state.player.x = Math.max(0, state.player.x - MOVE_SPEED);
+      if (keys['arrowright'] || keys['d']) state.player.x = Math.min(canvas.width - PLAYER_WIDTH, state.player.x + MOVE_SPEED);
 
-      if (now - gameData.lastSpawnTime > gameData.spawnInterval) {
-        const spawnCount = gameData.difficulty >= 4 && Math.random() < 0.5 ? 2 : 1;
+      if (now - state.lastSpawn > state.spawnInterval) {
+        const spawnCount = state.wave >= 4 && Math.random() < 0.5 ? 2 : 1;
         for (let i = 0; i < spawnCount; i++) {
-          const x = Math.random() * (canvas.width - objectSize);
-          gameData.objects.push({
-            x,
+          state.objects.push({
+            x: Math.random() * (canvas.width - OBJECT_SIZE),
             y: 0,
             type: getRandomObjectType(),
-            id: Math.random(),
-            initialX: x
+            id: Date.now() + Math.random(),
+            initialX: Math.random() * (canvas.width - OBJECT_SIZE)
           });
         }
-        gameData.lastSpawnTime = now;
+        state.lastSpawn = now;
       }
 
-      if (now - gameData.lastXPSpawnTime > difficulty.xpInterval) {
-        const x = Math.random() * (canvas.width - objectSize);
-        gameData.objects.push({
-          x,
+      if (now - state.xpSpawnTimer > difficulty.xpInterval) {
+        state.objects.push({
+          x: Math.random() * (canvas.width - OBJECT_SIZE),
           y: 0,
           type: 'xp',
-          id: Math.random()
+          id: Date.now() + Math.random()
         });
-        gameData.lastXPSpawnTime = now;
+        state.xpSpawnTimer = now;
       }
 
-      gameData.floatingTexts = gameData.floatingTexts
-        .map(text => ({
-          ...text,
-          y: text.y - 1,
-          age: text.age + 1
-        }))
+      state.floatingTexts = state.floatingTexts
+        .map(text => ({ ...text, y: text.y - 1, age: text.age + 1 }))
         .filter(text => text.age < 60);
 
-      gameData.objects = gameData.objects.filter((obj) => {
-        if (obj.type === 'timeout') {
-          obj.x = obj.initialX + Math.sin(obj.y / 20) * 60;
-        }
+      state.objects = state.objects.filter((obj) => {
+        if (obj.type === 'timeout') obj.x = obj.initialX + Math.sin(obj.y / 20) * 60;
+        const objWidth = obj.type === 'deadline' ? 40 : OBJECT_SIZE;
+        obj.y += obj.type === 'deadline' ? state.fallSpeed * 2 : state.fallSpeed;
 
-        const objWidth = obj.type === 'deadline' ? 40 : objectSize;
-        obj.y += obj.type === 'deadline' ? gameData.fallSpeed * 2 : gameData.fallSpeed;
-
-        if (
-          gameData.invincibilityEnd < now &&
-          obj.y + objWidth > gameData.playerY &&
-          obj.y < gameData.playerY + playerHeight &&
-          obj.x + objWidth > gameData.playerX &&
-          obj.x < gameData.playerX + playerWidth
-        ) {
+        if (!state.player.invincible && checkCollision(state.player, obj)) {
           if (obj.type === 'xp') {
-            gameData.score += 25;
-            gameData.floatingTexts.push({
-              x: obj.x + objectSize / 2,
-              y: obj.y,
-              text: '+25 XP!',
-              age: 0
-            });
-            setScore(gameData.score);
+            state.score += 25;
+            state.floatingTexts.push({ x: obj.x + OBJECT_SIZE / 2, y: obj.y, text: '+25 XP!', age: 0 });
+            setScore(Math.floor(state.score));
           } else {
-            gameData.lives -= 1;
-            setLives(gameData.lives);
-            gameData.invincibilityEnd = now + 1500;
-            if (gameData.lives <= 0) {
+            state.lives -= 1;
+            setLives(state.lives);
+            state.player.invincible = true;
+            setTimeout(() => { state.player.invincible = false; }, 1500);
+            if (state.lives <= 0) {
+              state.running = false;
+              setFinalScore(Math.floor(state.score));
               setGameState('gameOver');
-              setFinalScore(gameData.score);
-              if (checkHighScore(gameData.score)) {
-                setShowInitialInput(true);
+              if (checkHighScore(state.score)) {
+                if (savedInitials) submitScore(savedInitials, Math.floor(state.score));
+                else setShowInitialInput(true);
               }
             }
-            gameData.playerX = canvas.width / 2 - playerWidth / 2;
+            state.player.x = canvas.width / 2 - PLAYER_WIDTH / 2;
           }
           return false;
         }
 
         if (obj.y > canvas.height) {
           if (obj.type !== 'xp') {
-            gameData.score += 2;
-            setScore(gameData.score);
+            state.score += 2;
+            setScore(Math.floor(state.score));
           }
           return false;
         }
-
-        return obj.y < canvas.height + objectSize;
+        return true;
       });
-
-      const scorePerSecond = Math.floor(elapsedSeconds);
-      const lastScore = Math.floor((now - gameData.gameStartTime - 16) / 1000);
-      if (scorePerSecond > lastScore) {
-        gameData.score += 1;
-        setScore(gameData.score);
-      }
     };
-
-    const drawObject = (obj) => {
-      const isInvincible = gameData.invincibilityEnd > now && 
-        Math.floor((now - (gameData.invincibilityEnd - 1500)) / 150) % 2 === 0;
-      const opacity = isInvincible && obj.type !== 'xp' ? 0.3 : 1;
-
-      ctx.globalAlpha = opacity;
-
-      if (obj.type === 'bug') {
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = 'rgba(255, 0, 0, 0.6)';
-        ctx.fillStyle = '#ff4444';
-        ctx.fillRect(obj.x, obj.y, objectSize, objectSize / 1.5);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 10px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('BUG', obj.x + objectSize / 2, obj.y + objectSize / 2 + 2);
-      } else if (obj.type === 'error') {
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = 'rgba(255, 0, 0, 0.6)';
-        ctx.fillStyle = '#ff0000';
-        ctx.fillRect(obj.x, obj.y, objectSize, objectSize / 1.5);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 10px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('ERR', obj.x + objectSize / 2, obj.y + objectSize / 2 + 2);
-      } else if (obj.type === 'seg') {
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = 'rgba(255, 0, 0, 0.6)';
-        ctx.fillStyle = '#ff9900';
-        ctx.fillRect(obj.x, obj.y, objectSize, objectSize / 1.5);
-        ctx.fillStyle = '#000000';
-        ctx.font = 'bold 10px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('SEG', obj.x + objectSize / 2, obj.y + objectSize / 2 + 2);
-      } else if (obj.type === 'nullptr') {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(obj.x, obj.y, objectSize, objectSize);
-        ctx.fillStyle = '#000000';
-        ctx.font = 'bold 8px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('NULL', obj.x + objectSize / 2, obj.y + objectSize / 2 + 2);
-      } else if (obj.type === 'timeout') {
-        ctx.fillStyle = '#888888';
-        ctx.fillRect(obj.x, obj.y, objectSize, objectSize);
-        ctx.fillStyle = '#000000';
-        ctx.font = 'bold 10px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('408', obj.x + objectSize / 2, obj.y + objectSize / 2 + 2);
-      } else if (obj.type === 'deadline') {
-        ctx.fillStyle = '#660000';
-        ctx.fillRect(obj.x, obj.y, 40, 40);
-        ctx.fillStyle = '#ffff00';
-        ctx.font = 'bold 7px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('DUE', obj.x + 20, obj.y + 15);
-        ctx.fillText('NOW', obj.x + 20, obj.y + 27);
-      } else if (obj.type === 'xp') {
-        ctx.shadowBlur = 12;
-        ctx.shadowColor = 'rgba(255, 221, 0, 0.8)';
-        ctx.fillStyle = '#ffdd00';
-        ctx.beginPath();
-        ctx.arc(obj.x + objectSize / 2, obj.y + objectSize / 2, objectSize / 2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#ffff00';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      }
-
-      ctx.shadowBlur = 0;
-      ctx.globalAlpha = 1;
-    };
-
-    const now = Date.now();
 
     const draw = () => {
       ctx.fillStyle = '#0d0a07';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
       ctx.strokeStyle = 'rgba(100, 100, 100, 0.05)';
       ctx.lineWidth = 0.5;
       for (let i = 0; i < canvas.width; i += 32) {
@@ -360,30 +286,89 @@ const Arcade = () => {
         ctx.font = 'bold 40px "Press Start 2P", monospace';
         ctx.textAlign = 'center';
         ctx.fillText('BUG DODGE', canvas.width / 2, canvas.height / 2 - 60);
-
         ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
         ctx.font = '14px "Press Start 2P", monospace';
         ctx.fillText('Press SPACE or tap to start', canvas.width / 2, canvas.height / 2 + 10);
-
         const highScore = localStorage.getItem('bugdodge_highscore') || 0;
         ctx.font = '12px "Press Start 2P", monospace';
         ctx.fillStyle = 'rgba(255, 200, 0, 0.6)';
         ctx.fillText(`BEST: ${highScore}`, canvas.width / 2, canvas.height - 40);
-      } else if (gameState === 'playing') {
-        const isInvincible = gameData.invincibilityEnd > now;
-        const blinkPhase = isInvincible && 
-          Math.floor((now - (gameData.invincibilityEnd - 1500)) / 150) % 2 === 0;
-        
-        ctx.globalAlpha = blinkPhase ? 0.3 : 1;
+      } else if (gameState === 'playing' && state.running) {
+        ctx.globalAlpha = state.player.invincible && Math.floor(Date.now() / 100) % 2 === 0 ? 0.3 : 1;
         ctx.fillStyle = '#d4a574';
-        ctx.fillRect(gameData.playerX, gameData.playerY, playerWidth, playerHeight);
+        ctx.fillRect(state.player.x, state.player.y, PLAYER_WIDTH, PLAYER_HEIGHT);
         ctx.fillStyle = '#ff9900';
-        ctx.fillRect(gameData.playerX + 4, gameData.playerY + 4, playerWidth - 8, playerHeight - 8);
+        ctx.fillRect(state.player.x + 4, state.player.y + 4, PLAYER_WIDTH - 8, PLAYER_HEIGHT - 8);
         ctx.globalAlpha = 1;
 
-        gameData.objects.forEach(drawObject);
+        state.objects.forEach((obj) => {
+          const opacity = state.player.invincible && obj.type !== 'xp' ? 0.3 : 1;
+          ctx.globalAlpha = opacity;
+          if (obj.type === 'bug') {
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = 'rgba(255, 0, 0, 0.6)';
+            ctx.fillStyle = '#ff4444';
+            ctx.fillRect(obj.x, obj.y, OBJECT_SIZE, OBJECT_SIZE / 1.5);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('BUG', obj.x + OBJECT_SIZE / 2, obj.y + OBJECT_SIZE / 2 + 2);
+          } else if (obj.type === 'error') {
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = 'rgba(255, 0, 0, 0.6)';
+            ctx.fillStyle = '#f00';
+            ctx.fillRect(obj.x, obj.y, OBJECT_SIZE, OBJECT_SIZE / 1.5);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('ERR', obj.x + OBJECT_SIZE / 2, obj.y + OBJECT_SIZE / 2 + 2);
+          } else if (obj.type === 'seg') {
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = 'rgba(255, 0, 0, 0.6)';
+            ctx.fillStyle = '#ff9900';
+            ctx.fillRect(obj.x, obj.y, OBJECT_SIZE, OBJECT_SIZE / 1.5);
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('SEG', obj.x + OBJECT_SIZE / 2, obj.y + OBJECT_SIZE / 2 + 2);
+          } else if (obj.type === 'nullptr') {
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(obj.x, obj.y, OBJECT_SIZE, OBJECT_SIZE);
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 8px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('NULL', obj.x + OBJECT_SIZE / 2, obj.y + OBJECT_SIZE / 2 + 2);
+          } else if (obj.type === 'timeout') {
+            ctx.fillStyle = '#888';
+            ctx.fillRect(obj.x, obj.y, OBJECT_SIZE, OBJECT_SIZE);
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('408', obj.x + OBJECT_SIZE / 2, obj.y + OBJECT_SIZE / 2 + 2);
+          } else if (obj.type === 'deadline') {
+            ctx.fillStyle = '#660000';
+            ctx.fillRect(obj.x, obj.y, 40, 40);
+            ctx.fillStyle = '#ff0';
+            ctx.font = 'bold 7px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('DUE', obj.x + 20, obj.y + 15);
+            ctx.fillText('NOW', obj.x + 20, obj.y + 27);
+          } else if (obj.type === 'xp') {
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = 'rgba(255, 221, 0, 0.8)';
+            ctx.fillStyle = '#ffdd00';
+            ctx.beginPath();
+            ctx.arc(obj.x + OBJECT_SIZE / 2, obj.y + OBJECT_SIZE / 2, OBJECT_SIZE / 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#ff0';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+          ctx.shadowBlur = 0;
+          ctx.globalAlpha = 1;
+        });
 
-        gameData.floatingTexts.forEach(text => {
+        state.floatingTexts.forEach(text => {
           ctx.fillStyle = `rgba(255, 221, 0, ${1 - text.age / 60})`;
           ctx.font = 'bold 12px Arial';
           ctx.textAlign = 'center';
@@ -391,40 +376,30 @@ const Arcade = () => {
         });
 
         ctx.textAlign = 'left';
-        ctx.globalAlpha = 1;
         ctx.fillStyle = '#ff9900';
         ctx.font = 'bold 14px "Press Start 2P", monospace';
-        ctx.fillText(`SCORE: ${gameData.score}`, 10, 25);
-        
-        // Draw lives as rectangles
+        ctx.fillText(`SCORE: ${Math.floor(state.score)}`, 10, 25);
         ctx.fillStyle = '#e03030';
-        for (let i = 0; i < gameData.lives; i++) {
-          ctx.fillRect(canvas.width - 20 - (i * 20), 10, 14, 14);
-        }
-
+        for (let i = 0; i < state.lives; i++) ctx.fillRect(canvas.width - 20 - (i * 20), 10, 14, 14);
         ctx.textAlign = 'center';
         ctx.fillStyle = '#ff9900';
         ctx.font = 'bold 12px "Press Start 2P", monospace';
-        ctx.fillText(`WAVE ${gameData.wave}`, canvas.width / 2, canvas.height - 10);
+        ctx.fillText(`WAVE ${state.wave}`, canvas.width / 2, canvas.height - 10);
       } else if (gameState === 'gameOver') {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
         ctx.fillStyle = '#ff4444';
         ctx.font = 'bold 48px "Press Start 2P", monospace';
         ctx.textAlign = 'center';
         ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 80);
-
         ctx.fillStyle = '#ff9900';
         ctx.font = 'bold 24px "Press Start 2P", monospace';
-        ctx.fillText(`SCORE: ${gameData.score}`, canvas.width / 2, canvas.height / 2 - 20);
-
-        if (checkHighScore(gameData.score)) {
+        ctx.fillText(`SCORE: ${Math.floor(state.score)}`, canvas.width / 2, canvas.height / 2 - 20);
+        if (checkHighScore(state.score)) {
           ctx.fillStyle = '#ffdd00';
           ctx.font = 'bold 18px "Press Start 2P", monospace';
           ctx.fillText('NEW RECORD!', canvas.width / 2, canvas.height / 2 + 30);
         }
-
         if (!showInitialInput) {
           ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
           ctx.font = '12px "Press Start 2P", monospace';
@@ -436,37 +411,20 @@ const Arcade = () => {
     const gameLoop = () => {
       update();
       draw();
-      requestAnimationFrame(gameLoop);
+      gameLoopRef.current = requestAnimationFrame(gameLoop);
     };
 
-    gameLoop();
+    gameLoopRef.current = requestAnimationFrame(gameLoop);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+      if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
+      state.running = false;
     };
-  }, [gameState, showInitialInput, leaderboard]);
+  }, [gameState, leaderboard, savedInitials, showInitialInput]);
 
   const handleMobileStart = () => {
-    if (gameState === 'start') {
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const playerWidth = 28;
-        gameDataRef.current.score = 0;
-        gameDataRef.current.lives = 2;
-        gameDataRef.current.playerX = canvas.width / 2 - playerWidth / 2;
-        gameDataRef.current.objects = [];
-        gameDataRef.current.gameStartTime = Date.now();
-        gameDataRef.current.difficulty = 1;
-        gameDataRef.current.floatingTexts = [];
-        setGameState('playing');
-        setScore(0);
-        setLives(2);
-        setWave(1);
-      }
-    } else if (gameState === 'gameOver' && !showInitialInput) {
-      setGameState('start');
-    }
+    if (gameState === 'start') setGameState('playing');
+    else if (gameState === 'gameOver' && !showInitialInput) setGameState('start');
   };
 
   return (
@@ -491,26 +449,50 @@ const Arcade = () => {
         </div>
 
         <div className="leaderboard">
-          <h3>
-            <Trophy size={16} style={{ display: 'inline-block', marginRight: '6px', verticalAlign: 'middle' }} />
-            HALL OF FAME
-          </h3>
+          <div className="leaderboard-header">
+            <div className="leaderboard-title">
+              <Trophy size={16} style={{ display: 'inline-block', marginRight: '8px', verticalAlign: 'middle' }} />
+              <span style={{ fontFamily: 'Press Start 2P', fontSize: '0.7rem', color: 'var(--glow-primary)', letterSpacing: '1px' }}>
+                HALL OF FAME
+              </span>
+            </div>
+            <div className="leaderboard-global-badge">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '4px' }}>
+                <circle cx="12" cy="12" r="10" stroke="#ff9900" strokeWidth="2"/>
+                <path d="M12 2C12 2 8 7 8 12C8 17 12 22 12 22" stroke="#ff9900" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M12 2C12 2 16 7 16 12C16 17 12 22 12 22" stroke="#ff9900" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M2 12H22" stroke="#ff9900" strokeWidth="1.5"/>
+                <path d="M4 7H20" stroke="#ff9900" strokeWidth="1.5"/>
+                <path d="M4 17H20" stroke="#ff9900" strokeWidth="1.5"/>
+              </svg>
+              <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', letterSpacing: '2px' }}>
+                GLOBAL
+              </span>
+            </div>
+          </div>
           <div className="leaderboard-entries">
-            {leaderboard.length === 0 ? (
+            {loadingLeaderboard ? (
+              <div className="empty-leaderboard">LOADING...</div>
+            ) : leaderboard.length === 0 ? (
               <div className="empty-leaderboard">No high scores yet</div>
             ) : (
-              leaderboard.map((entry, index) => (
-                <div
-                  key={index}
-                  className={`leaderboard-entry ${
-                    entry.score === finalScore ? 'highlight' : ''
-                  }`}
-                >
-                  <span className="rank">#{index + 1}</span>
-                  <span className="initials">{entry.initials}</span>
-                  <span className="score">{entry.score}</span>
-                </div>
-              ))
+              leaderboard.map((entry, index) => {
+                const date = new Date(entry.created_at);
+                const relative = getRelativeTime(date);
+                return (
+                  <div
+                    key={index}
+                    className={`leaderboard-entry ${
+                      entry.score === finalScore ? 'highlight' : ''
+                    }`}
+                  >
+                    <span className="rank">{index + 1}</span>
+                    <span className="initials">{entry.initials}</span>
+                    <span className="score">{entry.score}</span>
+                    <span className="date">{relative}</span>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
@@ -528,19 +510,18 @@ const Arcade = () => {
       {showInitialInput && gameState === 'gameOver' && (
         <InitialInput
           score={finalScore}
-          onSubmit={(initials) => {
-            localStorage.setItem('bugdodge_highscore', finalScore);
-            let saved = localStorage.getItem('bugdodge_leaderboard');
-            let list = saved ? JSON.parse(saved) : [];
-            list.push({
-              initials,
-              score: finalScore,
-              date: new Date().toISOString().split('T')[0]
-            });
-            list = list.sort((a, b) => b.score - a.score).slice(0, 5);
-            localStorage.setItem('bugdodge_leaderboard', JSON.stringify(list));
-            setLeaderboard(list);
+          savedInitials={savedInitials}
+          onSubmit={async (initials) => {
+            localStorage.setItem('bugdodge_initials', initials);
+            setSavedInitials(initials);
+            await submitScore(initials, finalScore);
+            const updated = await getTopScores();
+            setLeaderboard(updated);
             setShowInitialInput(false);
+          }}
+          onChangeInitials={() => {
+            localStorage.removeItem('bugdodge_initials');
+            setSavedInitials(null);
           }}
         />
       )}
@@ -548,11 +529,20 @@ const Arcade = () => {
   );
 };
 
-const InitialInput = ({ score, onSubmit }) => {
-  const [initials, setInitials] = useState('AAA');
+const InitialInput = ({ score, savedInitials, onSubmit, onChangeInitials }) => {
+  const [initials, setInitials] = useState('AA');
+  const [showingInput, setShowingInput] = useState(!savedInitials);
 
   const handleSubmit = () => {
-    onSubmit(initials.toUpperCase().slice(0, 3));
+    const clean = initials.toUpperCase().slice(0, 2);
+    if (clean.length === 2 && /^[A-Z]{2}$/.test(clean)) {
+      onSubmit(clean);
+    }
+  };
+
+  const handleChange = () => {
+    onChangeInitials();
+    setShowingInput(true);
   };
 
   return (
@@ -560,20 +550,32 @@ const InitialInput = ({ score, onSubmit }) => {
       <div className="initial-input-box">
         <h2>NEW RECORD!</h2>
         <p className="initial-score">Score: {score}</p>
-        <label>ENTER INITIALS:</label>
-        <input
-          type="text"
-          maxLength="3"
-          value={initials}
-          onChange={(e) => setInitials(e.target.value.toUpperCase())}
-          autoFocus
-          onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-          className="initial-input"
-          placeholder="AAA"
-        />
-        <button onClick={handleSubmit} className="initial-submit">
-          CONFIRM
-        </button>
+        
+        {showingInput ? (
+          <>
+            <label>ENTER INITIALS:</label>
+            <input
+              type="text"
+              maxLength="2"
+              value={initials}
+              onChange={(e) => setInitials(e.target.value.toUpperCase())}
+              autoFocus
+              onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
+              className="initial-input"
+              placeholder="AA"
+            />
+            <button onClick={handleSubmit} className="initial-submit">
+              CONFIRM
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="initials-display">Submitted as: <span>{savedInitials}</span></p>
+            <button onClick={handleChange} className="initial-change">
+              change
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

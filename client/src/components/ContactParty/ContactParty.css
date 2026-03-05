@@ -2,6 +2,18 @@
   max-width: 1000px;
   margin: 2rem auto;
   padding: 2rem;
+  border: 1px solid var(--border-gold);
+  box-shadow: 0 0 12px rgba(212, 146, 30, 0.15);
+  border-radius: 4px;
+  transition: all 0.25s ease;
+}
+
+.contact-party:hover {
+  border: 1px solid var(--glow-primary);
+  box-shadow: 0 0 24px rgba(255, 153, 0, 0.4),
+              0 0 48px rgba(255, 153, 0, 0.15),
+              inset 0 0 20px rgba(255, 153, 0, 0.05);
+  transform: translateY(-3px);
 }
 
 .party-members {
@@ -27,8 +39,11 @@
 }
 
 .party-member:hover {
-  border-color: var(--border-gold);
-  box-shadow: 0 0 20px rgba(201, 168, 76, 0.2);
+  border-color: var(--glow-primary);
+  box-shadow: 0 0 24px rgba(255, 153, 0, 0.4),
+              0 0 48px rgba(255, 153, 0, 0.15),
+              inset 0 0 20px rgba(255, 153, 0, 0.05);
+  transform: translateY(-3px);
 }
 
 .member-icon {

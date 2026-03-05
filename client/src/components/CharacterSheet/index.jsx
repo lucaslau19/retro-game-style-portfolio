@@ -38,7 +38,7 @@ const CharacterSheet = () => {
           animate={{ opacity: showClass ? 1 : 0 }}
           transition={{ delay: 1 }}
         >
-          <span className="typewriter">{player.class}</span>
+          <p>{player.class}</p>
         </motion.div>
 
         <motion.p

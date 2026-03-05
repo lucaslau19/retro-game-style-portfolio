@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { GraduationCap, Activity, MapPin } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
@@ -9,6 +9,7 @@ import './DetailsSection.css';
 const DetailsSection = () => {
   const { player } = usePlayer();
   const { displayText, isComplete } = useTypewriter(player.bio, 8, 300);
+  const [portraitHovered, setPortraitHovered] = useState(false);
 
   return (
     <motion.div
@@ -48,10 +49,12 @@ const DetailsSection = () => {
           </motion.div>
 
           <motion.div
-            className="details-portrait"
+            className={`details-portrait ${portraitHovered ? 'hovered' : ''}`}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 1 }}
+            onMouseEnter={() => setPortraitHovered(true)}
+            onMouseLeave={() => setPortraitHovered(false)}
           >
             <PixelCharacter />
           </motion.div>
