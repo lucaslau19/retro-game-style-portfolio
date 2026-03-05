@@ -1,0 +1,30 @@
+.pixel-character-frame {
+  width: 380px;
+  height: 380px;
+  border: 2px solid var(--border-gold);
+  box-shadow: 0 0 20px rgba(212, 146, 30, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-panel);
+  border-radius: 4px;
+}
+
+.pixel-character {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pixel-grid {
+  display: grid;
+  grid-template-columns: repeat(16, 23px);
+  grid-template-rows: repeat(16, 23px);
+  gap: 0;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+.pixel {
+  border: 0.5px solid rgba(255, 255, 255, 0.05);
+}

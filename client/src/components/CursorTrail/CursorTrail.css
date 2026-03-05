@@ -1,0 +1,17 @@
+.cursor-trail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+.trail-particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #ff9900;
+  transition: none;
+}

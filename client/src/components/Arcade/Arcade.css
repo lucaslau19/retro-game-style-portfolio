@@ -1,0 +1,312 @@
+.arcade-section {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 2rem;
+  min-height: 850px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.arcade-title {
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  color: var(--glow-primary);
+  text-shadow: 0 0 20px var(--glow-primary), 0 0 40px var(--glow-primary);
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.arcade-subtitle {
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.arcade-container {
+  display: flex;
+  gap: 2rem;
+  width: 100%;
+  max-width: 1100px;
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.game-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 300px;
+  max-width: 900px;
+  width: 100%;
+}
+
+.game-canvas {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 900 / 550;
+  background: #0d0a07;
+  border: 3px solid var(--border-gold);
+  border-radius: 4px;
+  box-shadow: 0 0 20px rgba(212, 146, 30, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.5);
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  display: block;
+}
+
+.scanline-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.08) 3px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+  pointer-events: none;
+  border-radius: 2px;
+}
+
+.wave-notification {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.5rem;
+  color: var(--glow-primary);
+  text-shadow: 0 0 20px var(--glow-primary);
+  animation: wave-pop 1.5s ease-out forwards;
+  pointer-events: none;
+  z-index: 100;
+}
+
+@keyframes wave-pop {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+}
+
+.leaderboard {
+  flex: 0 0 200px;
+  background: rgba(10, 10, 15, 0.8);
+  border: 2px solid var(--border-gold);
+  border-radius: 4px;
+  padding: 1.5rem;
+  box-shadow: 0 0 15px rgba(201, 168, 76, 0.2);
+  height: fit-content;
+}
+
+.leaderboard h3 {
+  font-size: 0.8rem;
+  color: var(--glow-primary);
+  margin-bottom: 1rem;
+  text-align: center;
+  text-shadow: 0 0 10px var(--glow-primary);
+  font-family: 'Press Start 2P', monospace;
+}
+
+.leaderboard-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.leaderboard-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 153, 0, 0.05);
+  border: 1px solid rgba(212, 146, 30, 0.2);
+  border-radius: 2px;
+  font-size: 0.7rem;
+  font-family: 'Press Start 2P', monospace;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+.leaderboard-entry.highlight {
+  background: rgba(255, 153, 0, 0.2);
+  border-color: var(--glow-primary);
+  box-shadow: 0 0 10px rgba(255, 153, 0, 0.3);
+}
+
+.rank {
+  color: rgba(201, 168, 76, 0.7);
+  min-width: 1.8rem;
+}
+
+.initials {
+  flex: 1;
+  text-align: center;
+  color: var(--glow-primary);
+  font-weight: bold;
+}
+
+.score {
+  color: var(--glow-primary);
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.empty-leaderboard {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 1rem 0;
+  font-size: 0.65rem;
+}
+
+.mobile-controls {
+  display: none;
+  gap: 1rem;
+  margin-top: 2rem;
+  justify-content: center;
+}
+
+.mobile-btn {
+  background: var(--border-gold);
+  color: var(--bg-void);
+  border: 2px solid var(--glow-primary);
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Press Start 2P', monospace;
+}
+
+.mobile-btn:active {
+  background: var(--glow-primary);
+  transform: scale(0.95);
+}
+
+.initial-input-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+}
+
+.initial-input-box {
+  background: var(--bg-panel);
+  border: 3px solid var(--border-gold);
+  padding: 2.5rem 2rem;
+  border-radius: 4px;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(212, 146, 30, 0.4);
+  max-width: 400px;
+}
+
+.initial-input-box h2 {
+  font-size: 1.2rem;
+  color: var(--glow-primary);
+  margin-bottom: 1rem;
+  font-family: 'Press Start 2P', monospace;
+}
+
+.initial-score {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.initial-input-box label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+  font-family: 'Press Start 2P', monospace;
+  letter-spacing: 1px;
+}
+
+.initial-input {
+  background: rgba(10, 10, 15, 0.5);
+  border: 2px solid var(--border-gold);
+  color: var(--glow-primary);
+  padding: 0.75rem 1rem;
+  font-size: 1.5rem;
+  text-align: center;
+  border-radius: 2px;
+  font-family: 'Press Start 2P', monospace;
+  margin-bottom: 1.5rem;
+  letter-spacing: 5px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.initial-input:focus {
+  outline: none;
+  box-shadow: 0 0 10px var(--glow-primary);
+  background: rgba(10, 10, 15, 0.8);
+}
+
+.initial-submit {
+  background: var(--border-gold);
+  color: var(--bg-void);
+  border: 2px solid var(--glow-primary);
+  padding: 0.75rem 2rem;
+  font-size: 0.85rem;
+  font-weight: bold;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: 'Press Start 2P', monospace;
+  transition: all 0.2s ease;
+}
+
+.initial-submit:hover {
+  background: var(--glow-primary);
+  transform: scale(1.05);
+}
+
+@media (max-width: 1024px) {
+  .arcade-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .leaderboard {
+    width: 100%;
+    flex: none;
+    max-width: 900px;
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-controls {
+    display: flex;
+  }
+
+  .arcade-section {
+    padding: 1rem;
+  }
+
+  .leaderboard {
+    margin-top: 1rem;
+  }
+
+  .game-canvas {
+    aspect-ratio: 4 / 3;
+  }
+}

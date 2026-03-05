@@ -1,0 +1,249 @@
+.contact-party {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 2rem;
+}
+
+.party-members {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 3rem;
+  flex-wrap: wrap;
+}
+
+.party-member {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  background: rgba(10, 10, 15, 0.8);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  transition: all 0.3s ease;
+  min-width: 150px;
+}
+
+.party-member:hover {
+  border-color: var(--border-gold);
+  box-shadow: 0 0 20px rgba(201, 168, 76, 0.2);
+}
+
+.member-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.party-member h3 {
+  margin: 0.5rem 0;
+  color: var(--glow-primary);
+}
+
+.error-message {
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid #dc3545;
+  color: #dc3545;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 1rem;
+  font-weight: bold;
+}
+
+.success-message {
+  background: rgba(40, 167, 69, 0.1);
+  border: 1px solid #28a745;
+  color: #28a745;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.success-message h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+}
+
+.success-message p {
+  margin: 0;
+}
+
+.contact-form-section {
+  background: rgba(10, 10, 15, 0.8);
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid rgba(201, 168, 76, 0.3);
+}
+
+.form-title {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--border-gold);
+  font-size: 1.5rem;
+}
+
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 0.75rem;
+  border: 1px solid var(--border-gold);
+  border-radius: 4px;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--glow-primary);
+  box-shadow: 0 0 10px rgba(255, 153, 0, 0.3);
+}
+
+.form-group input.error,
+.form-group textarea.error {
+  border-color: var(--danger);
+}
+
+.error-text {
+  color: var(--danger);
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.submit-button {
+  background: var(--border-gold);
+  color: var(--bg-void);
+  border: none;
+  padding: 1rem;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  align-self: flex-start;
+}
+
+.submit-button:hover {
+  background: var(--glow-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 153, 0, 0.3);
+}
+
+.success-message {
+  text-align: center;
+  padding: 2rem;
+  background: rgba(46, 204, 113, 0.1);
+  border: 1px solid var(--success);
+  border-radius: 8px;
+}
+
+.success-message h4 {
+  color: var(--success);
+  margin-bottom: 1rem;
+}
+
+.success-message p {
+  color: var(--text-muted);
+}
+
+.contact-form-section {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.form-title {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--border-gold);
+  font-size: 1.5rem;
+}
+
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 0.75rem;
+  background: rgba(10, 10, 15, 0.8);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: inherit;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--glow-primary);
+  box-shadow: 0 0 10px rgba(255, 153, 0, 0.2);
+}
+
+.form-group input.error,
+.form-group textarea.error {
+  border-color: var(--danger);
+}
+
+.error-text {
+  color: var(--danger);
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.submit-button {
+  background: var(--border-gold);
+  color: var(--bg-void);
+  border: none;
+  padding: 1rem;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+
+.submit-button:hover {
+  background: var(--glow-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 153, 0, 0.3);
+}
+
+.success-message {
+  text-align: center;
+  padding: 2rem;
+  background: rgba(46, 204, 113, 0.1);
+  border: 1px solid var(--success);
+  border-radius: 8px;
+}
+
+.success-message h4 {
+  color: var(--success);
+  margin-bottom: 0.5rem;
+}
+
+.success-message p {
+  color: var(--text-muted);
+}
