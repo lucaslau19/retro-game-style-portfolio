@@ -175,6 +175,11 @@
   color: var(--glow-primary);
 }
 
+.stat-chip svg {
+  color: var(--glow-primary);
+  flex-shrink: 0;
+}
+
 .typewriter-cursor {
   animation: blink 1s infinite;
   color: var(--glow-primary);

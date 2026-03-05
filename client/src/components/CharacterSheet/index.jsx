@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { usePlayer } from '../../context/PlayerContext';
 import { useXPCounter } from '../../hooks/useXPCounter';
+import { DiscIcon, SnowboardIcon, CoffeeIcon, AirpodsIcon } from './InventoryIcons';
 import './CharacterSheet.css';
 
 const CharacterSheet = () => {
@@ -82,7 +83,7 @@ const CharacterSheet = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 2.5 }}
             >
-              <div className="item-emoji">🥏</div>
+              <div className="item-icon"><DiscIcon /></div>
               <div className="item-label">DISC</div>
             </motion.div>
             <motion.div 
@@ -91,7 +92,7 @@ const CharacterSheet = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 2.7 }}
             >
-              <div className="item-emoji">🎿</div>
+              <div className="item-icon"><SnowboardIcon /></div>
               <div className="item-label">SNOWBOARD</div>
             </motion.div>
             <motion.div 
@@ -100,7 +101,7 @@ const CharacterSheet = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 2.9 }}
             >
-              <div className="item-emoji">☕</div>
+              <div className="item-icon"><CoffeeIcon /></div>
               <div className="item-label">COFFEE</div>
             </motion.div>
             <motion.div 
@@ -109,7 +110,7 @@ const CharacterSheet = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 3.1 }}
             >
-              <div className="item-emoji">🎧</div>
+              <div className="item-icon"><AirpodsIcon /></div>
               <div className="item-label">AIRPODS</div>
             </motion.div>
           </div>

@@ -32,8 +32,15 @@
 }
 
 .member-icon {
-  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 0.5rem;
+  color: var(--glow-primary);
+}
+
+.member-icon svg {
+  color: var(--glow-primary);
 }
 
 .party-member h3 {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Sword, User, BarChart2, Briefcase, Gamepad2, UserPlus } from 'lucide-react';
 import LoadingScreen from './components/LoadingScreen';
 import CharacterSheet from './components/CharacterSheet';
 import DetailsSection from './components/DetailsSection';
@@ -33,12 +34,12 @@ const App = () => {
   }, []);
 
   const sections = [
-    { component: <CharacterSheet key="character" />, label: "CHARACTER", icon: "⚔️" },
-    { component: <DetailsSection key="details" />, label: "DETAILS", icon: "📖" },
-    { component: <StatsPanel key="stats" />, label: "ATTRIBUTES", icon: "📊" },
-    { component: <QuestLog key="quests" />, label: "QUESTS", icon: "📜" },
-    { component: <Arcade key="arcade" />, label: "ARCADE", icon: "🕹️" },
-    { component: <ContactParty key="contact" />, label: "ADD FRIEND", icon: "👥" }
+    { component: <CharacterSheet key="character" />, label: "CHARACTER", icon: <Sword size={18} /> },
+    { component: <DetailsSection key="details" />, label: "DETAILS", icon: <User size={18} /> },
+    { component: <StatsPanel key="stats" />, label: "ATTRIBUTES", icon: <BarChart2 size={18} /> },
+    { component: <QuestLog key="quests" />, label: "QUESTS", icon: <Briefcase size={18} /> },
+    { component: <Arcade key="arcade" />, label: "ARCADE", icon: <Gamepad2 size={18} /> },
+    { component: <ContactParty key="contact" />, label: "ADD FRIEND", icon: <UserPlus size={18} /> }
   ];
 
   return (

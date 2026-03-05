@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Github, Linkedin, FileText } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
 import './ContactParty.css';
 
@@ -60,19 +61,19 @@ const ContactParty = () => {
     {
       name: 'GitHub',
       link: 'https://github.com/lucaslau19',
-      icon: '🐙',
+      icon: <Github size={32} />,
       type: 'social'
     },
     {
       name: 'LinkedIn',
       link: 'https://www.linkedin.com/in/lucas-lau-2569312a0/',
-      icon: '💼',
+      icon: <Linkedin size={32} />,
       type: 'social'
     },
     {
       name: 'Resume',
       link: '/Lucas_Lau_Resume.pdf',
-      icon: '📜',
+      icon: <FileText size={32} />,
       type: 'resume',
       download: 'Lucas_Lau_Resume.pdf'
     }
@@ -118,7 +119,7 @@ const ContactParty = () => {
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            ❌ Send failed. Try again.
+            Send failed. Try again.
           </motion.div>
         )}
 
@@ -129,7 +130,7 @@ const ContactParty = () => {
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <h4>✅ Message delivered to the guild!</h4>
+            <h4>Message delivered to the guild!</h4>
             <p>Thanks for reaching out. I'll get back to you soon!</p>
           </motion.div>
         ) : (

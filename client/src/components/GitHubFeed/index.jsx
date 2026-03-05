@@ -20,9 +20,9 @@ const GitHubFeed = () => {
 
   const getIcon = (type) => {
     const iconMap = {
-      'push': '⚔️',
-      'create': '🏰',
-      'star': '⭐'
+      'push': 'PUSH',
+      'create': 'CREATE',
+      'star': 'STAR'
     };
     return iconMap[type] || '•';
   };

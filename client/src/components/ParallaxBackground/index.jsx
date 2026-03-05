@@ -33,7 +33,7 @@ const Particles = () => {
         <mesh key={i} position={particle.position}>
           <sphereGeometry args={[0.02, 8, 8]} />
           <meshBasicMaterial
-            color={i % 3 === 0 ? '#9b59ff' : i % 3 === 1 ? '#00f5ff' : '#c9a84c'}
+            color={i % 3 === 0 ? '#ff9900' : i % 3 === 1 ? '#00f5ff' : '#c9a84c'}
             transparent
             opacity={0.6}
           />

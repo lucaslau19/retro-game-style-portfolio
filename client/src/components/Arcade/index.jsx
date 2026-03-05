@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Gamepad2, Trophy } from 'lucide-react';
 import './Arcade.css';
 
 const Arcade = () => {
@@ -272,9 +273,11 @@ const Arcade = () => {
         ctx.shadowBlur = 8;
         ctx.shadowColor = 'rgba(255, 0, 0, 0.6)';
         ctx.fillStyle = '#ff4444';
-        ctx.font = '20px Arial';
+        ctx.fillRect(obj.x, obj.y, objectSize, objectSize / 1.5);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 10px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('🐛', obj.x + objectSize / 2, obj.y + objectSize);
+        ctx.fillText('BUG', obj.x + objectSize / 2, obj.y + objectSize / 2 + 2);
       } else if (obj.type === 'error') {
         ctx.shadowBlur = 8;
         ctx.shadowColor = 'rgba(255, 0, 0, 0.6)';
@@ -393,8 +396,11 @@ const Arcade = () => {
         ctx.font = 'bold 14px "Press Start 2P", monospace';
         ctx.fillText(`SCORE: ${gameData.score}`, 10, 25);
         
-        ctx.textAlign = 'right';
-        ctx.fillText(`❤️ × ${gameData.lives}`, canvas.width - 10, 25);
+        // Draw lives as rectangles
+        ctx.fillStyle = '#e03030';
+        for (let i = 0; i < gameData.lives; i++) {
+          ctx.fillRect(canvas.width - 20 - (i * 20), 10, 14, 14);
+        }
 
         ctx.textAlign = 'center';
         ctx.fillStyle = '#ff9900';
@@ -416,7 +422,7 @@ const Arcade = () => {
         if (checkHighScore(gameData.score)) {
           ctx.fillStyle = '#ffdd00';
           ctx.font = 'bold 18px "Press Start 2P", monospace';
-          ctx.fillText('🏆 NEW RECORD! 🏆', canvas.width / 2, canvas.height / 2 + 30);
+          ctx.fillText('NEW RECORD!', canvas.width / 2, canvas.height / 2 + 30);
         }
 
         if (!showInitialInput) {
@@ -470,7 +476,9 @@ const Arcade = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8 }}
     >
-      <h1 className="arcade-title pixel-font">🕹️ ARCADE</h1>
+      <h1 className="arcade-title pixel-font">
+        ARCADE
+      </h1>
       <p className="arcade-subtitle">Can you survive the codebase?</p>
 
       <div className="arcade-container">
@@ -483,7 +491,10 @@ const Arcade = () => {
         </div>
 
         <div className="leaderboard">
-          <h3>🏆 HALL OF FAME</h3>
+          <h3>
+            <Trophy size={16} style={{ display: 'inline-block', marginRight: '6px', verticalAlign: 'middle' }} />
+            HALL OF FAME
+          </h3>
           <div className="leaderboard-entries">
             {leaderboard.length === 0 ? (
               <div className="empty-leaderboard">No high scores yet</div>
@@ -547,7 +558,7 @@ const InitialInput = ({ score, onSubmit }) => {
   return (
     <div className="initial-input-overlay">
       <div className="initial-input-box">
-        <h2>🏆 NEW RECORD! 🏆</h2>
+        <h2>NEW RECORD!</h2>
         <p className="initial-score">Score: {score}</p>
         <label>ENTER INITIALS:</label>
         <input

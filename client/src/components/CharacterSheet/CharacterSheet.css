@@ -135,8 +135,12 @@
   background: rgba(10, 10, 15, 0.95);
 }
 
-.item-emoji {
-  font-size: 2rem;
+.item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
 }
 
 .item-label {

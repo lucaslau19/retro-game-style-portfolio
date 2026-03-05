@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { GraduationCap, Activity, MapPin } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
 import { useTypewriter } from '../../hooks/useTypewriter';
 import PixelCharacter from '../PixelCharacter';
@@ -97,9 +98,18 @@ const DetailsSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
           >
-            <div className="stat-chip">🎓 UWaterloo '30</div>
-            <div className="stat-chip">🧬 Biomedical Eng.</div>
-            <div className="stat-chip">📍 Toronto, ON | Waterloo, ON</div>
+            <div className="stat-chip">
+              <GraduationCap size={14} />
+              <span>UWaterloo '30</span>
+            </div>
+            <div className="stat-chip">
+              <Activity size={14} />
+              <span>Biomedical Eng.</span>
+            </div>
+            <div className="stat-chip">
+              <MapPin size={14} />
+              <span>Toronto, ON | Waterloo, ON</span>
+            </div>
           </motion.div>
         </div>
       </div>
